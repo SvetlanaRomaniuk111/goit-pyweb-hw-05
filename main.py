@@ -39,17 +39,17 @@ async def exchange_rate_for_day(index_day):
 def selected_rates(data):
     try:
         rates = data["exchangeRate"]
-        rate_usd = next((rate for rate in rates if rate["currency"] == "USD"), None)
         rate_eur = next((rate for rate in rates if rate["currency"] == "EUR"), None)
-        if rate_usd and rate_eur:
+        rate_usd = next((rate for rate in rates if rate["currency"] == "USD"), None)
+        if rate_eur and rate_usd:
             return {
-                "USD": {
-                    "sale": rate_usd.get("saleRate", "N/A"),
-                    "purchase": rate_usd.get("purchaseRate", "N/A"),
-                },
                 "EUR": {
                     "sale": rate_eur.get("saleRate", "N/A"),
                     "purchase": rate_eur.get("purchaseRate", "N/A"),
+                },
+                "USD": {
+                    "sale": rate_usd.get("saleRate", "N/A"),
+                    "purchase": rate_usd.get("purchaseRate", "N/A"),
                 },
             }
         else:
@@ -62,7 +62,7 @@ async def main(days):
     if days < 1 or days > 10:
         print("Error: Invalid number of days. Please enter a number between 1 and 10.")
         return
-    
+
     # Виконання запитів до API
     tasks = [exchange_rate_for_day(shift) for shift in range(1, int(days) + 1)]
     results = await asyncio.gather(*tasks)
@@ -70,7 +70,19 @@ async def main(days):
     # Вивід результатів у потрібному форматі
     print("[")
     for result in results:
-        print(f" {result},")
+        for date, rates in result.items():
+            print("  {")
+            print(f"    '{date}': {{")
+            for currency, values in rates.items():
+                print(f"      '{currency}': {{")
+                if isinstance(values, dict):
+                    print(f"        'sale': {values['sale']},")
+                    print(f"        'purchase': {values['purchase']}")
+                else:
+                    print(f"        'error': '{values}'")
+                print("      },")
+            print("    },")
+            print("  },")
     print("]")
 
 
